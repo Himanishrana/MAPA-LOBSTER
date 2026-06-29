@@ -49,59 +49,6 @@ Together, these components form a hardware-friendly adaptive MAC architecture su
 
 ---
 
-# Repository Structure
-
-MAPA-LOBSTER/
-│
-├── README.md
-├── LICENSE
-├── .gitignore
-├── requirements.txt
-├── CITATION.cff
-│
-├── mapa_lobster_codes/
-│   ├── benchmark.py
-│   ├── lobster_multiplier.py
-│   ├── mapa_controller.py
-│   ├── mapa_mac.py
-│   └── __init__.py
-│
-├── hardware/
-│   ├── rtl/
-│   │   ├── exact_multiplier.v
-│   │   ├── lobster_multiplier.v
-│   │   ├── mapa_controller.v
-│   │   └── mapa_mac_top.v
-│   │
-│   ├── testbench/
-│   │   ├── tb_mapa_mac_top.v
-│   │   └── testvectors.txt
-│   │
-│   ├── waveforms/
-│   │   ├── rtl_waveform.png
-│   │   └── vivado_schematic.png
-│   │
-│   └── synthesis/
-│       ├── utilization_report.pdf
-│       └── timing_report.pdf
-│
-├── dashboard/
-│   ├── dashboard.png
-│   ├── dashboard_live.png
-│   └── dashboard_source/      # optional
-│
-├── docs/
-│   ├── MAPA_LOBSTER_Report.pdf
-│   ├── MAPA_LOBSTER_Presentation.pdf
-│   └── proposal.pdf
-│
-└── results/
-    ├── benchmark_results.txt
-    ├── pareto_curve.png
-    ├── scatter_plot.png
-    ├── energy_graph.png
-    └── approximation_rate.png
-
 # How MAPA Works
 
 For every multiplication,
