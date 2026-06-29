@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>MAPA-LOBSTER Live Charts</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --navy:#1B2A4A;--blue:#1E3A6E;--accent:#C0392B;
+  --teal:#1D9E75;--amber:#BA7517;--purple:#534AB7;
+  --lgray:#E8ECF2;--card:#F4F7FC;--white:#fff;
+  --text:#1F2937;--muted:#6B7280;--border:#D1D5DB;
+}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:#F0F4FA;color:var(--text);min-height:100vh}
+
+/* HEADER */
+.hero{background:var(--navy);padding:1.6rem 2rem 1.4rem;display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap}
+.hero-left h1{color:#fff;font-size:1.35rem;font-weight:700}
+.hero-left p{color:#AFC8E8;font-size:.82rem;margin-top:.2rem}
+.hero-right{display:flex;align-items:center;gap:.8rem;flex-wrap:wrap}
+.ctrl{display:flex;flex-direction:column;align-items:center;gap:.25rem}
+.ctrl label{font-size:.68rem;font-weight:600;color:#AFC8E8;text-transform:uppercase;letter-spacing:.05em}
+.ctrl input[type=range]{width:120px;accent-color:#60A5FA}
+.ctrl .v{font-size:1.1rem;font-weight:700;color:#fff;min-width:36px;text-align:center}
+.btn{padding:.45rem 1.1rem;border-radius:8px;font-size:.82rem;font-weight:600;cursor:pointer;border:none;transition:opacity .15s,transform .1s}
+.btn:active{transform:scale(.97)}
+.btn-run{background:var(--teal);color:#fff}
+.btn-auto{background:var(--amber);color:#fff}
+.btn-reset{background:transparent;color:#AFC8E8;border:1px solid #375080}
+.btn:hover{opacity:.88}
+.speed-row{display:flex;gap:.3rem}
+.sp{padding:.25rem .55rem;border-radius:5px;border:1px solid #375080;background:transparent;font-size:.72rem;cursor:pointer;color:#AFC8E8}
+.sp.on{background:#2563EB;color:#fff;border-color:#2563EB}
+
+/* STATS ROW */
+.stats{display:grid;grid-template-columns:repeat(5,1fr);gap:.7rem;padding:.9rem 1rem;background:var(--navy);border-top:1px solid #253560}
+.st{text-align:center}
+.st .sv{font-size:1.4rem;font-weight:700;color:#fff}
+.st .sl{font-size:.68rem;color:#AFC8E8;margin-top:.1rem}
+.st.approx .sv{color:#FAC775}
+.st.energy .sv{color:#5DCAA5}
+.st.error .sv{color:#F7C1C1}
+.st.acc .sv{color:#B5D4F4}
+
+/* CURRENT OP CARD */
+.op-banner{background:var(--white);border-bottom:1px solid var(--border);padding:.7rem 1rem;display:flex;align-items:center;gap:1.5rem;flex-wrap:wrap;font-size:.82rem;min-height:44px}
+.op-banner .op-label{font-weight:700;color:var(--navy);min-width:80px}
+.op-pill{padding:.2rem .7rem;border-radius:12px;font-weight:700;font-size:.78rem}
+.op-pill.approx{background:#FEF3C7;color:#92400E}
+.op-pill.exact{background:#D1FAE5;color:#065F46}
+.op-banner .muted{color:var(--muted)}
+
+/* CHARTS GRID */
+.charts{display:grid;grid-template-columns:1fr 1fr;gap:.8rem;padding:.8rem;max-width:1200px;margin:0 auto}
+.chart-card{background:var(--white);border:1px solid var(--border);border-radius:12px;padding:.9rem;position:relative}
+.chart-card.wide{grid-column:1/-1}
+.chart-title{font-size:.8rem;font-weight:700;color:var(--navy);margin-bottom:.6rem;display:flex;align-items:center;gap:.5rem}
+.chart-title .dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.chart-title .sub{font-weight:400;color:var(--muted);font-size:.72rem}
+.chart-wrap{position:relative;width:100%}
+
+/* BOTTOM ROW — 3 narrow charts */
+.charts3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:.8rem;padding:0 .8rem .8rem;max-width:1200px;margin:0 auto}
+
+@media(max-width:680px){
+  .charts,.charts3{grid-template-columns:1fr}
+  .chart-card.wide{grid-column:1}
+  .stats{grid-template-columns:repeat(3,1fr)}
+}
+</style>
+</head>
+<body>
+
+<!-- HEADER + CONTROLS -->
+<div class="hero">
+  <div class="hero-left">
+    <h1>MAPA-LOBSTER — Live Graph Dashboard</h1>
+    <p>Real-time visualisation of every multiply operation decision</p>
+  </div>
+  <div class="hero-right">
+    <div class="ctrl">
+      <label>Operand A</label>
+      <input type="range" id="slA" min="1" max="127" value="70" oninput="sl()">
+      <div class="v" id="dA">70</div>
+    </div>
+    <div class="ctrl">
+      <label>Operand B</label>
+      <input type="range" id="slB" min="1" max="127" value="50" oninput="sl()">
+      <div class="v" id="dB">50</div>
+    </div>
+    <div class="ctrl">
+      <label>Speed</label>
+      <div class="speed-row">
+        <button class="sp" onclick="setSpd(1200,this)">Slow</button>
+        <button class="sp on" onclick="setSpd(400,this)">Normal</button>
+        <button class="sp" onclick="setSpd(80,this)">Fast</button>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:.4rem">
+      <button class="btn btn-run" id="runBtn" onclick="runOp()">▶ Run One</button>
+      <button class="btn btn-auto" id="autoBtn" onclick="autoRun()">⟳ Auto 50×</button>
+      <button class="btn btn-reset" onclick="resetAll()">↺ Reset</button>
+    </div>
+  </div>
+</div>
+
+<!-- STATS STRIP -->
+<div class="stats">
+  <div class="st"><div class="sv" id="stOps">0</div><div class="sl">Total ops</div></div>
+  <div class="st approx"><div class="sv" id="stApp">0%</div><div class="sl">Approximated</div></div>
+  <div class="st energy"><div class="sv" id="stEng">0%</div><div class="sl">Energy saved (est.)</div></div>
+  <div class="st error"><div class="sv" id="stErr">0.00%</div><div class="sl">Mean rel. error</div></div>
+  <div class="st acc"><div class="sv" id="stAcc">0</div><div class="sl">Correction sum</div></div>
+</div>
+
+<!-- CURRENT OP BANNER -->
+<div class="op-banner" id="opBanner">
+  <span class="op-label">Last op:</span>
+  <span class="muted">Run an operation to begin</span>
+</div>
+
+<!-- TOP 2 CHARTS -->
+<div class="charts">
+
+  <!-- Chart 1: Scatter — each op plotted by magnitude -->
+  <div class="chart-card">
+    <div class="chart-title">
+      <div class="dot" style="background:#1D9E75"></div>
+      Operation scatter — M score vs error %
+      <span class="sub">(each dot = one multiply)</span>
+    </div>
+    <div class="chart-wrap" style="height:230px"><canvas id="scatterChart"></canvas></div>
+  </div>
+
+  <!-- Chart 2: Running approx ratio -->
+  <div class="chart-card">
+    <div class="chart-title">
+      <div class="dot" style="background:#BA7517"></div>
+      Approximation ratio over time
+      <span class="sub">(% of ops that went approximate)</span>
+    </div>
+    <div class="chart-wrap" style="height:230px"><canvas id="ratioChart"></canvas></div>
+  </div>
+
+  <!-- Chart 3 wide: Error per operation -->
+  <div class="chart-card wide">
+    <div class="chart-title">
+      <div class="dot" style="background:#C0392B"></div>
+      Relative error per operation
+      <span class="sub">(exact ops = 0%, LOBSTER correction keeps approx error small)</span>
+    </div>
+    <div class="chart-wrap" style="height:160px"><canvas id="errorChart"></canvas></div>
+  </div>
+
+</div>
+
+<!-- BOTTOM 3 CHARTS -->
+<div class="charts3">
+
+  <!-- Chart 4: Donut — approx vs exact -->
+  <div class="chart-card">
+    <div class="chart-title">
+      <div class="dot" style="background:#534AB7"></div>
+      Approx vs exact split
+    </div>
+    <div class="chart-wrap" style="height:180px"><canvas id="donutChart"></canvas></div>
+  </div>
+
+  <!-- Chart 5: LOB distribution histogram -->
+  <div class="chart-card">
+    <div class="chart-title">
+      <div class="dot" style="background:#1E3A6E"></div>
+      LOB score distribution
+      <span class="sub">(confirms Laplacian weight dist.)</span>
+    </div>
+    <div class="chart-wrap" style="height:180px"><canvas id="lobChart"></canvas></div>
+  </div>
+
+  <!-- Chart 6: Energy saving per op -->
+  <div class="chart-card">
+    <div class="chart-title">
+      <div class="dot" style="background:#1D9E75"></div>
+      Energy saved per op (%)
+      <span class="sub">(based on active bit-width)</span>
+    </div>
+    <div class="chart-wrap" style="height:180px"><canvas id="energyChart"></canvas></div>
+  </div>
+
+</div>
+
+<script>
+/* ═══════════════════════════════════════════
+   STATE
+═══════════════════════════════════════════ */
+let spd = 400, running = false, autoRunning = false;
+let ops = 0, appOps = 0, totalAbsErr = 0, totalExact = 0, totalCorrection = 0;
+
+// Histories (keep last 60 for line charts)
+const MAX = 60;
+const errHistory   = [];  // {x: opNum, y: relErr}
+const ratioHistory = [];  // {x: opNum, y: approxRatio%}
+const energyHistory= [];  // {x: opNum, y: energySaved%}
+const scatterData  = { approx:[], exact:[] };
+const lobCounts    = new Array(8).fill(0); // LOB 0..7
+
+function lob(x){ x=Math.abs(x); for(let i=6;i>=0;i--) if(x&(1<<i)) return i; return 0; }
+function setSpd(s,btn){ spd=s; document.querySelectorAll('.sp').forEach(b=>b.classList.remove('on')); btn.classList.add('on'); }
+function sl(){ document.getElementById('dA').textContent=document.getElementById('slA').value; document.getElementById('dB').textContent=document.getElementById('slB').value; }
+
+/* ═══════════════════════════════════════════
+   CHART SETUP
+═══════════════════════════════════════════ */
+Chart.defaults.font.family = "'Segoe UI', system-ui, sans-serif";
+Chart.defaults.font.size   = 11;
+Chart.defaults.color       = '#6B7280';
+
+const gridOpts = { color:'#E8ECF2', borderColor:'#D1D5DB', tickColor:'transparent' };
+const tickOpts = { color:'#9CA3AF' };
+
+// 1. SCATTER
+const scatterCtx = document.getElementById('scatterChart').getContext('2d');
+const scatterChart = new Chart(scatterCtx, {
+  type:'scatter',
+  data:{
+    datasets:[
+      { label:'Approximate', data:[], backgroundColor:'rgba(186,117,23,0.65)', pointRadius:5, pointHoverRadius:7 },
+      { label:'Exact',       data:[], backgroundColor:'rgba(29,158,117,0.65)', pointRadius:5, pointHoverRadius:7 }
+    ]
+  },
+  options:{
+    responsive:true, maintainAspectRatio:false,
+    animation:{duration:200},
+    plugins:{legend:{position:'top',labels:{boxWidth:10,padding:12}},tooltip:{callbacks:{label:d=>`M=${d.x.toFixed(2)}, err=${d.y.toFixed(1)}%`}}},
+    scales:{
+      x:{title:{display:true,text:'Magnitude score M',color:'#9CA3AF'},grid:gridOpts,ticks:{...tickOpts},min:0,max:1},
+      y:{title:{display:true,text:'Relative error %',color:'#9CA3AF'},grid:gridOpts,ticks:{...tickOpts},min:0}
+    }
+  }
+});
+
+// 2. RATIO LINE
+const ratioCtx = document.getElementById('ratioChart').getContext('2d');
+const ratioChart = new Chart(ratioCtx, {
+  type:'line',
+  data:{ datasets:[{ label:'Approx ratio %', data:[], borderColor:'#BA7517', backgroundColor:'rgba(186,117,23,0.08)', fill:true, tension:.35, pointRadius:2, borderWidth:2 }] },
+  options:{
+    responsive:true, maintainAspectRatio:false,
+    animation:{duration:150},
+    plugins:{legend:{display:false},tooltip:{callbacks:{label:d=>`${d.y.toFixed(1)}% approximated`}}},
+    scales:{
+      x:{type:'linear',title:{display:true,text:'Operation #',color:'#9CA3AF'},grid:gridOpts,ticks:{...tickOpts}},
+      y:{min:0,max:100,grid:gridOpts,ticks:{...tickOpts,callback:v=>v+'%'}}
+    }
+  }
+});
+
+// 3. ERROR LINE (bar really)
+const errCtx = document.getElementById('errorChart').getContext('2d');
+const errChart = new Chart(errCtx, {
+  type:'bar',
+  data:{ datasets:[{ label:'Rel error %', data:[], backgroundColor:[], borderRadius:3, borderSkipped:false }] },
+  options:{
+    responsive:true, maintainAspectRatio:false,
+    animation:{duration:150},
+    plugins:{legend:{display:false},tooltip:{callbacks:{label:d=>`Error: ${d.y.toFixed(2)}%`}}},
+    scales:{
+      x:{type:'linear',title:{display:false},grid:{display:false},ticks:{...tickOpts}},
+      y:{min:0,grid:gridOpts,ticks:{...tickOpts,callback:v=>v+'%'}}
+    }
+  }
+});
+
+// 4. DONUT
+const donutCtx = document.getElementById('donutChart').getContext('2d');
+const donutChart = new Chart(donutCtx, {
+  type:'doughnut',
+  data:{ labels:['Approximate','Exact'], datasets:[{ data:[0,1], backgroundColor:['rgba(186,117,23,0.8)','rgba(29,158,117,0.8)'], borderWidth:0, hoverOffset:6 }] },
+  options:{
+    responsive:true, maintainAspectRatio:false,
+    animation:{duration:200},
+    plugins:{legend:{position:'bottom',labels:{boxWidth:10,padding:8}},tooltip:{callbacks:{label:d=>`${d.label}: ${d.raw}`}}}
+  }
+});
+
+// 5. LOB HISTOGRAM
+const lobCtx = document.getElementById('lobChart').getContext('2d');
+const lobChart = new Chart(lobCtx, {
+  type:'bar',
+  data:{
+    labels:['0','1','2','3','4','5','6'],
+    datasets:[{ label:'LOB count', data:[0,0,0,0,0,0,0], backgroundColor: ['rgba(83,74,183,0.8)','rgba(83,74,183,0.75)','rgba(83,74,183,0.7)','rgba(83,74,183,0.6)','rgba(29,158,117,0.6)','rgba(29,158,117,0.7)','rgba(29,158,117,0.8)'], borderRadius:4, borderSkipped:false }]
+  },
+  options:{
+    responsive:true, maintainAspectRatio:false,
+    animation:{duration:200},
+    plugins:{legend:{display:false},tooltip:{callbacks:{label:d=>`LOB=${d.label}: ${d.raw} ops`}}},
+    scales:{
+      x:{title:{display:true,text:'LOB value',color:'#9CA3AF'},grid:{display:false},ticks:{...tickOpts}},
+      y:{grid:gridOpts,ticks:{...tickOpts}}
+    }
+  }
+});
+
+// 6. ENERGY BAR
+const engCtx = document.getElementById('energyChart').getContext('2d');
+const engChart = new Chart(engCtx, {
+  type:'bar',
+  data:{ datasets:[{ label:'Energy saved %', data:[], backgroundColor:[], borderRadius:3, borderSkipped:false }] },
+  options:{
+    responsive:true, maintainAspectRatio:false,
+    animation:{duration:150},
+    plugins:{legend:{display:false},tooltip:{callbacks:{label:d=>`Saved: ${d.y.toFixed(0)}%`}}},
+    scales:{
+      x:{type:'linear',title:{display:false},grid:{display:false},ticks:{...tickOpts}},
+      y:{min:0,max:100,grid:gridOpts,ticks:{...tickOpts,callback:v=>v+'%'}}
+    }
+  }
+});
+
+/* ═══════════════════════════════════════════
+   CORE OPERATION
+═══════════════════════════════════════════ */
+async function runOp(){
+  if(running) return;
+  running = true;
+  if(!autoRunning){ document.getElementById('runBtn').disabled=true; document.getElementById('autoBtn').disabled=true; }
+
+  const A = +document.getElementById('slA').value;
+  const B = +document.getElementById('slB').value;
+  const lobA = lob(A), lobB = lob(B);
+  const M = (lobA+lobB)/14;
+  const P = 1-M;
+  const R = Math.random();
+  const useApprox = R < P;
+  const exact = A*B;
+
+  let result, absErr, energySaved, k=0;
+
+  if(useApprox){
+    k = Math.min(lobA,lobB);
+    const mask = (0x7F>>k)<<k;
+    const At = A&mask, Bt = B&mask;
+    const approxProd = At*Bt;
+    // LOBSTER correction
+    const truncBits = A & ~mask;
+    const parity = (truncBits.toString(2).split('1').length-1)%2;
+    const lfsrBit = Math.random()>.5?1:0;
+    const correction = lfsrBit^parity;
+    result = approxProd + correction;
+    absErr = Math.abs(exact-result);
+    const activeBits = 7-k;
+    energySaved = Math.round((1-(activeBits*activeBits)/(7*7))*100);
+  } else {
+    result = exact;
+    absErr = 0;
+    energySaved = 0;
+  }
+
+  const relErr = exact>0 ? absErr/exact*100 : 0;
+
+  // Update counters
+  ops++;
+  if(useApprox) appOps++;
+  totalAbsErr += absErr;
+  totalExact  += exact;
+  const correction = result-exact;
+  totalCorrection += correction;
+  lobCounts[lobA]++;
+  lobCounts[lobB]++;
+
+  // Stats strip
+  const ratio = Math.round(appOps/ops*100);
+  const avgEng= Math.round(appOps/ops*52);
+  const avgErr = appOps>0 ? (totalAbsErr/appOps/(totalExact/ops)*100).toFixed(2) : '0.00';
+  document.getElementById('stOps').textContent = ops;
+  document.getElementById('stApp').textContent = ratio+'%';
+  document.getElementById('stEng').textContent = avgEng+'%';
+  document.getElementById('stErr').textContent = avgErr+'%';
+  document.getElementById('stAcc').textContent = (totalCorrection>=0?'+':'')+totalCorrection;
+
+  // Op banner
+  const banner = document.getElementById('opBanner');
+  banner.innerHTML = `
+    <span class="op-label">Last op:</span>
+    <span><b>${A}</b> × <b>${B}</b></span>
+    <span class="muted">M=${M.toFixed(3)}</span>
+    <span class="muted">P=${P.toFixed(3)}</span>
+    <span class="muted">R=${R.toFixed(3)}</span>
+    <span class="op-pill ${useApprox?'approx':'exact'}">${useApprox?'≈ APPROXIMATE':'= EXACT'}</span>
+    ${useApprox?`<span class="muted">k=${k}, err=${relErr.toFixed(1)}%</span>`:''}
+    <span class="muted">exact=${exact} → got=${result}</span>
+  `;
+
+  // ── UPDATE CHARTS ──────────────────────────────
+
+  // 1. Scatter
+  const scatterPt = {x:parseFloat(M.toFixed(3)), y:parseFloat(relErr.toFixed(2))};
+  if(useApprox) scatterChart.data.datasets[0].data.push(scatterPt);
+  else          scatterChart.data.datasets[1].data.push(scatterPt);
+  scatterChart.update('none');
+
+  // 2. Ratio line
+  ratioHistory.push({x:ops, y:ratio});
+  if(ratioHistory.length>MAX) ratioHistory.shift();
+  ratioChart.data.datasets[0].data = [...ratioHistory];
+  ratioChart.update('none');
+
+  // 3. Error bar
+  const errColor = relErr>10?'rgba(192,57,43,0.75)':relErr>3?'rgba(186,117,23,0.75)':'rgba(29,158,117,0.75)';
+  errHistory.push({x:ops, y:parseFloat(relErr.toFixed(2))});
+  if(errHistory.length>MAX) errHistory.shift();
+  errChart.data.datasets[0].data = [...errHistory];
+  const newColors = errHistory.map(p=>p.y>10?'rgba(192,57,43,0.75)':p.y>3?'rgba(186,117,23,0.75)':'rgba(29,158,117,0.75)');
+  errChart.data.datasets[0].backgroundColor = newColors;
+  errChart.update('none');
+
+  // 4. Donut
+  donutChart.data.datasets[0].data = [appOps, ops-appOps];
+  donutChart.update('none');
+
+  // 5. LOB histogram
+  lobChart.data.datasets[0].data = [...lobCounts];
+  lobChart.update('none');
+
+  // 6. Energy bar
+  energyHistory.push({x:ops, y:energySaved});
+  if(energyHistory.length>MAX) energyHistory.shift();
+  const engColors = energyHistory.map(p=>p.y>50?'rgba(29,158,117,0.8)':p.y>0?'rgba(186,117,23,0.7)':'rgba(209,213,219,0.8)');
+  engChart.data.datasets[0].data = [...energyHistory];
+  engChart.data.datasets[0].backgroundColor = engColors;
+  engChart.update('none');
+
+  if(spd>100) await sleep(spd*0.3);
+  running = false;
+  if(!autoRunning){ document.getElementById('runBtn').disabled=false; document.getElementById('autoBtn').disabled=false; }
+}
+
+async function autoRun(){
+  if(autoRunning) return;
+  autoRunning = true;
+  document.getElementById('autoBtn').textContent = '⏳ Running...';
+  document.getElementById('autoBtn').disabled = true;
+  document.getElementById('runBtn').disabled = true;
+
+  for(let i=0;i<50;i++){
+    // Random operands biased toward small values (Laplacian simulation)
+    const coin = Math.random();
+    const A = coin < 0.6
+      ? Math.floor(Math.random()*30)+1
+      : Math.floor(Math.random()*97)+30;
+    const B = Math.random() < 0.6
+      ? Math.floor(Math.random()*30)+1
+      : Math.floor(Math.random()*97)+30;
+    document.getElementById('slA').value = A;
+    document.getElementById('slB').value = B;
+    document.getElementById('dA').textContent = A;
+    document.getElementById('dB').textContent = B;
+    await runOp();
+    if(spd > 100) await sleep(spd*0.15);
+  }
+
+  autoRunning = false;
+  document.getElementById('autoBtn').textContent = '⟳ Auto 50×';
+  document.getElementById('autoBtn').disabled = false;
+  document.getElementById('runBtn').disabled = false;
+}
+
+function resetAll(){
+  ops=0; appOps=0; totalAbsErr=0; totalExact=0; totalCorrection=0;
+  errHistory.length=0; ratioHistory.length=0; energyHistory.length=0;
+  scatterData.approx=[]; scatterData.exact=[];
+  lobCounts.fill(0);
+
+  scatterChart.data.datasets[0].data=[];
+  scatterChart.data.datasets[1].data=[];
+  scatterChart.update();
+
+  ratioChart.data.datasets[0].data=[];
+  ratioChart.update();
+
+  errChart.data.datasets[0].data=[];
+  errChart.data.datasets[0].backgroundColor=[];
+  errChart.update();
+
+  donutChart.data.datasets[0].data=[0,1];
+  donutChart.update();
+
+  lobChart.data.datasets[0].data=[0,0,0,0,0,0,0];
+  lobChart.update();
+
+  engChart.data.datasets[0].data=[];
+  engChart.data.datasets[0].backgroundColor=[];
+  engChart.update();
+
+  document.getElementById('stOps').textContent='0';
+  document.getElementById('stApp').textContent='0%';
+  document.getElementById('stEng').textContent='0%';
+  document.getElementById('stErr').textContent='0.00%';
+  document.getElementById('stAcc').textContent='0';
+  document.getElementById('opBanner').innerHTML='<span class="op-label">Last op:</span><span class="muted">Run an operation to begin</span>';
+}
+
+function sleep(ms){ return new Promise(r=>setTimeout(r,ms)); }
+
+sl();
+</script>
+</body>
+</html>
