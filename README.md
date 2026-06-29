@@ -60,15 +60,15 @@ For every multiplication,
 
 The significance score is defined as
 
-\[
+$$
 M(A,B)=\frac{LOB(A)+LOB(B)}{12}
-\]
+$$
 
 Approximation probability:
 
-\[
-P_{approx}=1-M(A,B)
-\]
+$$
+P_{\text{approx}} = 1 - M(A,B)
+$$
 
 Low-significance operations are approximated more frequently, while high-significance operations are protected using exact computation.
 
@@ -82,9 +82,9 @@ The approximate multiplier performs three major steps:
 
 The truncation depth is determined dynamically according to operand significance.
 
-\[
-k=LOB(min(|A|,|B|))
-\]
+$$
+k = LOB(\min(|A|,|B|))
+$$
 
 ---
 
@@ -92,9 +92,9 @@ k=LOB(min(|A|,|B|))
 
 The discarded bits are compressed into a parity signal.
 
-\[
-P=t_0 \oplus t_1 \oplus \cdots \oplus t_k
-\]
+$$
+P=t_0\oplus t_1\oplus \cdots \oplus t_k
+$$
 
 ---
 
@@ -104,9 +104,9 @@ Instead of permanently discarding truncation error, a lightweight stochastic cor
 
 The objective is to produce
 
-\[
+$$
 E(error)\approx0
-\]
+$$
 
 thereby reducing accumulated MAC bias during CNN inference.
 
@@ -176,7 +176,8 @@ Dashboard features include:
 - Hardware synthesis metrics
 - CNN benchmark statistics
 
-*(Insert Dashboard Screenshot here)*
+<img width="1435" height="574" alt="Screenshot 2026-06-29 at 2 22 07 PM" src="https://github.com/user-attachments/assets/14b4e3d9-2192-47c4-b49c-4fe3a159b44c" />
+<img width="1425" height="484" alt="Screenshot 2026-06-29 at 2 22 31 PM" src="https://github.com/user-attachments/assets/928679a9-69e4-4a4d-a40b-56cd5218a7da" />
 
 ---
 
@@ -274,8 +275,7 @@ See the **LICENSE** file for details.
 
 **Developed by**
 - Himanish Rana
-- Teammate 1
-- Teammate 2
+- Daksh Arora
 
 **Project Supervisor**
 - Dr. Bharat Garg
