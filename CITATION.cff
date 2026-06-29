@@ -1,0 +1,19 @@
+cff-version: 1.2.0
+title: "MAPA-LOBSTER: Magnitude-Adaptive Probabilistic Approximation with Leading-One-Bit Segmented Truncation & Error Redistribution"
+message: "If you use this repository in your research, please cite it."
+
+authors:
+  - family-names: Rana
+    given-names: Himanish
+
+  - family-names: <Teammate 1 Surname>
+    given-names: <Teammate 1 Name>
+
+  - family-names: <Teammate 2 Surname>
+    given-names: <Teammate 2 Name>
+
+version: "1.0.0"
+
+license: MIT
+
+repository-code: https://github.com/<username>/MAPA-LOBSTER
